@@ -1,0 +1,274 @@
+<HEAD><TITLE>i-os2syn.ads</TITLE></HEAD>
+<BODY>
+<HR><DIV ALIGN="center"><H1> File : i-os2syn.ads </H1></DIV><HR>
+<PRE>
+<FONT COLOR=green><EM>------------------------------------------------------------------------------</EM></FONT>
+<FONT COLOR=green><EM>--                                                                          --</EM></FONT>
+<FONT COLOR=green><EM>--                         GNAT COMPILER COMPONENTS                         --</EM></FONT>
+<FONT COLOR=green><EM>--                                                                          --</EM></FONT>
+<FONT COLOR=green><EM>--    I N T E R F A C E S . O S 2 L I B . S Y N C H R O N I Z A T I O N     --</EM></FONT>
+<FONT COLOR=green><EM>--                                                                          --</EM></FONT>
+<FONT COLOR=green><EM>--                                  S p e c                                 --</EM></FONT>
+<FONT COLOR=green><EM>--                                                                          --</EM></FONT>
+<FONT COLOR=green><EM>--                             $Revision: 1.17 $                            --</EM></FONT>
+<FONT COLOR=green><EM>--                                                                          --</EM></FONT>
+<FONT COLOR=green><EM>--          Copyright (C) 1993-1998 Free Software Foundation, Inc.          --</EM></FONT>
+<FONT COLOR=green><EM>--                                                                          --</EM></FONT>
+<FONT COLOR=green><EM>-- GNAT is free software;  you can  redistribute it  and/or modify it under --</EM></FONT>
+<FONT COLOR=green><EM>-- terms of the  GNU General Public License as published  by the Free Soft- --</EM></FONT>
+<FONT COLOR=green><EM>-- ware  Foundation;  either version 2,  or (at your option) any later ver- --</EM></FONT>
+<FONT COLOR=green><EM>-- sion.  GNAT is distributed in the hope that it will be useful, but WITH- --</EM></FONT>
+<FONT COLOR=green><EM>-- OUT ANY WARRANTY;  without even the  implied warranty of MERCHANTABILITY --</EM></FONT>
+<FONT COLOR=green><EM>-- or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License --</EM></FONT>
+<FONT COLOR=green><EM>-- for  more details.  You should have  received  a copy of the GNU General --</EM></FONT>
+<FONT COLOR=green><EM>-- Public License  distributed with GNAT;  see file COPYING.  If not, write --</EM></FONT>
+<FONT COLOR=green><EM>-- to  the Free Software Foundation,  59 Temple Place - Suite 330,  Boston, --</EM></FONT>
+<FONT COLOR=green><EM>-- MA 02111-1307, USA.                                                      --</EM></FONT>
+<FONT COLOR=green><EM>--                                                                          --</EM></FONT>
+<FONT COLOR=green><EM>-- As a special exception,  if other files  instantiate  generics from this --</EM></FONT>
+<FONT COLOR=green><EM>-- unit, or you link  this unit with other files  to produce an executable, --</EM></FONT>
+<FONT COLOR=green><EM>-- this  unit  does not  by itself cause  the resulting  executable  to  be --</EM></FONT>
+<FONT COLOR=green><EM>-- covered  by the  GNU  General  Public  License.  This exception does not --</EM></FONT>
+<FONT COLOR=green><EM>-- however invalidate  any other reasons why  the executable file  might be --</EM></FONT>
+<FONT COLOR=green><EM>-- covered by the  GNU Public License.                                      --</EM></FONT>
+<FONT COLOR=green><EM>--                                                                          --</EM></FONT>
+<FONT COLOR=green><EM>-- GNAT was originally developed  by the GNAT team at  New York University. --</EM></FONT>
+<FONT COLOR=green><EM>-- It is now maintained by Ada Core Technologies Inc (http://www.gnat.com). --</EM></FONT>
+<FONT COLOR=green><EM>--                                                                          --</EM></FONT>
+<FONT COLOR=green><EM>------------------------------------------------------------------------------</EM></FONT>
+
+<b>with</b> Interfaces.OS2Lib.Threads;
+
+<b>package</b> Interfaces.OS2Lib.Synchronization <b>is</b>
+<b>pragma</b> Preelaborate (Synchronization);
+
+   <b>package</b> IC  <b>renames</b> Interfaces.C;
+   <b>package</b> IOT <b>renames</b> Interfaces.OS2Lib.Threads;
+   <b>package</b> S   <b>renames</b> System;
+
+   <FONT COLOR=green><EM>--  Semaphore Attributes</EM></FONT>
+
+   DC_SEM_SHARED : <b>constant</b> := 16#01#;
+   <FONT COLOR=green><EM>--  DosCreateMutex, DosCreateEvent, and DosCreateMuxWait use it to indicate</EM></FONT>
+   <FONT COLOR=green><EM>--  whether the semaphore is shared or private when the PSZ is null</EM></FONT>
+
+   SEM_INDEFINITE_WAIT  : <b>constant</b> ULONG := -1;
+   SEM_IMMEDIATE_RETURN : <b>constant</b> ULONG :=  0;
+
+   <b>type</b> HSEM <b>is</b> <b>new</b> LHANDLE;
+   <b>type</b> PHSEM <b>is</b> <b>access</b> <b>all</b> HSEM;
+
+   <b>type</b> SEMRECORD <b>is</b> <b>record</b>
+      hsemCur : HSEM;
+      ulUser  : ULONG;
+   <b>end</b> <b>record</b>;
+
+   <b>type</b> PSEMRECORD <b>is</b> <b>access</b> <b>all</b> SEMRECORD;
+
+   <FONT COLOR=green><EM>--  Quad word structure</EM></FONT>
+
+   <FONT COLOR=green><EM>--  Originally QWORD is defined as a record containing two ULONGS,</EM></FONT>
+   <FONT COLOR=green><EM>--  the first containing low word and the second for the high word,</EM></FONT>
+   <FONT COLOR=green><EM>--  but it is cleaner to define it as follows:</EM></FONT>
+
+   <b>type</b> QWORD <b>is</b> <b>delta</b> 1.0 <b>range</b> -2.0**63 .. 2.0**63 - 1.0;
+   <b>type</b> PQWORD <b>is</b> <b>access</b> <b>all</b> QWORD;
+
+   <b>type</b> HEV <b>is</b> <b>new</b> HSEM;
+   <b>type</b> PHEV <b>is</b> <b>access</b> <b>all</b> HEV;
+
+   <b>type</b> HMTX  <b>is</b> <b>new</b> HSEM;
+   <b>type</b> PHMTX <b>is</b> <b>access</b> <b>all</b> HMTX;
+
+   <b>type</b> HMUX  <b>is</b> <b>new</b> HSEM;
+   <b>type</b> PHMUX <b>is</b> <b>access</b> <b>all</b> HMUX;
+
+   <b>type</b> HTIMER <b>is</b> <b>new</b> LHANDLE;
+   <b>type</b> PHTIMER <b>is</b> <b>access</b> <b>all</b> HTIMER;
+
+   <FONT COLOR=green><EM>-----------------------</EM></FONT>
+   <FONT COLOR=green><EM>-- Critical sections --</EM></FONT>
+   <FONT COLOR=green><EM>-----------------------</EM></FONT>
+
+   <b>function</b> DosEnterCritSec <b>return</b> APIRET;
+   <b>pragma</b> Import (C, DosEnterCritSec, "DosEnterCritSec");
+
+   <b>function</b> DosExitCritSec <b>return</b> APIRET;
+   <b>pragma</b> Import (C, DosExitCritSec, "DosExitCritSec");
+
+   <FONT COLOR=green><EM>--------------</EM></FONT>
+   <FONT COLOR=green><EM>-- EventSem --</EM></FONT>
+   <FONT COLOR=green><EM>--------------</EM></FONT>
+
+   <b>function</b> DosCreateEventSem
+     (pszName   : PSZ;
+      f_phev    : PHEV;
+      flAttr    : ULONG;
+      fState    : BOOL32)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosCreateEventSem, "DosCreateEventSem");
+
+   <b>function</b> DosOpenEventSem
+     (pszName   : PSZ;
+      F_phev    : PHEV)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosOpenEventSem, "DosOpenEventSem");
+
+   <b>function</b> DosCloseEventSem
+     (F_hev     : HEV)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosCloseEventSem, "DosCloseEventSem");
+
+   <b>function</b> DosResetEventSem
+     (F_hev     : HEV;
+      pulPostCt : PULONG)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosResetEventSem, "DosResetEventSem");
+
+   <b>function</b> DosPostEventSem
+     (F_hev     : HEV)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosPostEventSem, "DosPostEventSem");
+
+   <b>function</b> DosWaitEventSem
+     (F_hev     : HEV;
+      ulTimeout : ULONG)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosWaitEventSem, "DosWaitEventSem");
+
+   <b>function</b> DosQueryEventSem
+     (F_hev     : HEV;
+      pulPostCt : PULONG)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosQueryEventSem, "DosQueryEventSem");
+
+   <FONT COLOR=green><EM>--------------</EM></FONT>
+   <FONT COLOR=green><EM>-- MutexSem --</EM></FONT>
+   <FONT COLOR=green><EM>--------------</EM></FONT>
+
+   <b>function</b> DosCreateMutexSem
+     (pszName   : PSZ;
+      F_phmtx   : PHMTX;
+      flAttr    : ULONG;
+      fState    : BOOL32)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosCreateMutexSem, "DosCreateMutexSem");
+
+   <b>function</b> DosOpenMutexSem
+     (pszName   : PSZ;
+      F_phmtx   : PHMTX)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosOpenMutexSem, "DosOpenMutexSem");
+
+   <b>function</b> DosCloseMutexSem
+     (F_hmtx    : HMTX)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosCloseMutexSem, "DosCloseMutexSem");
+
+   <b>function</b> DosRequestMutexSem
+     (F_hmtx    : HMTX;
+      ulTimeout : ULONG)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosRequestMutexSem, "DosRequestMutexSem");
+
+   <b>function</b> DosReleaseMutexSem
+     (F_hmtx    : HMTX)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosReleaseMutexSem, "DosReleaseMutexSem");
+
+   <b>function</b> DosQueryMutexSem
+     (F_hmtx    : HMTX;
+      F_ppid    : IOT.PPID;
+      F_ptid    : IOT.PTID;
+      pulCount  : PULONG)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosQueryMutexSem, "DosQueryMutexSem");
+
+   <FONT COLOR=green><EM>----------------</EM></FONT>
+   <FONT COLOR=green><EM>-- MuxWaitSem --</EM></FONT>
+   <FONT COLOR=green><EM>----------------</EM></FONT>
+
+   <b>function</b> DosCreateMuxWaitSem
+     (pszName   : PSZ;
+      F_phmux   : PHMUX;
+      cSemRec   : ULONG;
+      pSemRec   : PSEMRECORD;
+      flAttr    : ULONG)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosCreateMuxWaitSem, "DosCreateMuxWaitSem");
+
+   DCMW_WAIT_ANY : <b>constant</b> := 16#02#;  <FONT COLOR=green><EM>-- wait on any event/mutex to occur</EM></FONT>
+   DCMW_WAIT_ALL : <b>constant</b> := 16#04#;  <FONT COLOR=green><EM>-- wait on all events/mutexes to occur</EM></FONT>
+   <FONT COLOR=green><EM>--  Values for "flAttr" parameter in DosCreateMuxWaitSem call</EM></FONT>
+
+   <b>function</b> DosOpenMuxWaitSem
+     (pszName   : PSZ;
+      F_phmux   : PHMUX)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosOpenMuxWaitSem, "DosOpenMuxWaitSem");
+
+   <b>function</b> DosCloseMuxWaitSem
+     (F_hmux    : HMUX)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosCloseMuxWaitSem, "DosCloseMuxWaitSem");
+
+   <b>function</b> DosWaitMuxWaitSem
+     (F_hmux    : HMUX;
+      ulTimeout : ULONG;
+      pulUser   : PULONG)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosWaitMuxWaitSem, "DosWaitMuxWaitSem");
+
+   <b>function</b> DosAddMuxWaitSem
+     (F_hmux    : HMUX;
+      pSemRec   : PSEMRECORD)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosAddMuxWaitSem, "DosAddMuxWaitSem");
+
+   <b>function</b> DosDeleteMuxWaitSem
+     (F_hmux    : HMUX;
+      F_hsem    : HSEM)
+      <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosDeleteMuxWaitSem, "DosDeleteMuxWaitSem");
+
+   <b>function</b> DosQueryMuxWaitSem
+     (F_hmux    : HMUX;
+     pcSemRec   : PULONG;
+     pSemRec    : PSEMRECORD;
+     pflAttr    : PULONG)
+     <b>return</b>       APIRET;
+   <b>pragma</b> Import (C, DosQueryMuxWaitSem, "DosQueryMuxWaitSem");
+
+   <FONT COLOR=green><EM>-----------</EM></FONT>
+   <FONT COLOR=green><EM>-- Timer --</EM></FONT>
+   <FONT COLOR=green><EM>-----------</EM></FONT>
+
+   <b>function</b> DosAsyncTimer
+    (msec      : ULONG;
+     F_hsem    : HSEM;
+     F_phtimer : PHTIMER)
+     <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosAsyncTimer, "DosAsyncTimer");
+
+   <b>function</b> DosStartTimer
+    (msec      : ULONG;
+     F_hsem    : HSEM;
+     F_phtimer : PHTIMER)
+     <b>return</b>      APIRET;
+   <b>pragma</b> Import (C, DosStartTimer, "DosStartTimer");
+
+   <b>function</b> DosStopTimer
+     (F_htimer : HTIMER)
+      <b>return</b>     APIRET;
+   <b>pragma</b> Import (C, DosStopTimer, "DosStopTimer");
+
+   <FONT COLOR=green><EM>--  DosTmrQueryTime provides a snapshot of the time</EM></FONT>
+   <FONT COLOR=green><EM>--  from the IRQ0 high resolution timer (Intel 8254)</EM></FONT>
+
+   <b>function</b> DosTmrQueryTime
+     (pqwTmrTime : <b>access</b> QWORD)   <FONT COLOR=green><EM>--  Time in 8254 ticks (1_192_755.2 Hz)</EM></FONT>
+      <b>return</b>       APIRET;
+   <b>pragma</b> Import (C, DosTmrQueryTime, "DosTmrQueryTime");
+
+<b>end</b> Interfaces.OS2Lib.Synchronization;
+</PRE></BODY></HTML>
